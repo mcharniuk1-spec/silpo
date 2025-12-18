@@ -5,7 +5,7 @@ on:
     # Run every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
     - cron: '0 */6 * * *'
   
-  # Allow manual trigger
+  # Allow manual trigger from GitHub UI
   workflow_dispatch:
 
 jobs:
@@ -18,19 +18,19 @@ jobs:
         with:
           fetch-depth: 1
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          python-version: '3.11'
+          cache: 'pip'
       
       - name: Install dependencies
-        run: npm ci --only=production
+        run: pip install -r requirements.txt
       
       - name: Run scraper
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run scrape
+        run: python -m src.main
       
       - name: Commit and push results
         run: |
@@ -41,7 +41,7 @@ jobs:
           
           # Check if there are changes to commit
           if git diff --quiet --cached; then
-            echo "No changes to commit"
+            echo "✓ No changes to commit"
           else
             git commit -m "⬆️ Update Silpo data - $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push origin main
@@ -56,5 +56,5 @@ jobs:
               issue_number: 1,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ Silpo scraper failed at ' + new Date().toISOString()
+              body: '❌ Silpo scraper failed - ' + new Date().toISOString()
             })
